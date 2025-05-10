@@ -5,9 +5,9 @@ const { verifyKey } = require('discord-interactions');
 
 // Configurações do bot
 const config = {
-  token: 'MTM3MDYxMzk0NDc1Mzg0ODQ0MQ.GP3uug.ozFwlSPqMj0csmKre7wYI888nBuJEzNInEMzvM',
-  clientId: '1370613944753848441',
-  guildId: 'cf9b1381ef0fef8d709f9e49c4b74ee1da9b9b22cc032a5ba8f7ab9006deb99c',
+  token: process.env.DISCORD_TOKEN,
+  clientId: process.env.CLIENT_ID,
+  guildId: process.env.GUILD_ID,
   embed: {
     color: 0x00ff00,
     title: '',
