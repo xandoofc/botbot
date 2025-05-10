@@ -1,28 +1,23 @@
-const { Client, EmbedBuilder, REST, Routes } = require('discord.js');
+const { EmbedBuilder, REST, Routes } = require('discord.js');
 const express = require('express');
 const bodyParser = require('body-parser');
+const { verifyKey } = require('discord-interactions');
 
 // Configurações do bot
 const config = {
-  token: process.env.DISCORD_TOKEN, // Adicione o token no ambiente do Netlify
-  clientId: process.env.CLIENT_ID, // ID do bot
-  guildId: process.env.GUILD_ID, // ID do servidor (opcional, para testes)
+  token: process.env.DISCORD_TOKEN,
+  clientId: process.env.CLIENT_ID,
+  guildId: process.env.GUILD_ID,
   embed: {
-    color: 0x00ff00, // Cor do embed (verde, em hexadecimal)
+    color: 0x00ff00,
     title: 'Mensagem Replicada',
-    author: {
-      name: 'Seu Bot',
-      iconURL: 'https://example.com/icon.png', // URL do ícone do autor
-    },
-    footer: {
-      text: 'Bot criado com ❤️',
-      iconURL: 'https://example.com/footer-icon.png', // URL do ícone do rodapé
-    },
-    timestamp: true, // Mostrar timestamp
+    author: { name: 'Seu Bot', iconURL: 'https://example.com/icon.png' },
+    footer: { text: 'Bot criado com ❤️', iconURL: 'https://example.com/footer-icon.png' },
+    timestamp: true,
   },
 };
 
-// Configuração do Express para Netlify Functions
+// Configuração do Express
 const app = express();
 app.use(bodyParser.json());
 
@@ -37,7 +32,7 @@ async function registerCommands() {
         {
           name: 'mensagem',
           description: 'A mensagem a ser replicada',
-          type: 3, // String
+          type: 3,
           required: true,
         },
       ],
@@ -46,10 +41,7 @@ async function registerCommands() {
 
   try {
     console.log('Registrando comandos...');
-    // Registro global (use guildId para servidor específico)
-    await rest.put(Routes.applicationCommands(config.clientId), {
-      body: commands,
-    });
+    await rest.put(Routes.applicationCommands(config.clientId), { body: commands });
     console.log('Comandos registrados com sucesso!');
   } catch (error) {
     console.error('Erro ao registrar comandos:', error);
@@ -59,71 +51,51 @@ async function registerCommands() {
 // Função principal do Netlify
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Método não permitido' }),
-    };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Método não permitido' }) };
   }
 
   const signature = event.headers['x-signature-ed25519'];
   const timestamp = event.headers['x-signature-timestamp'];
   const body = JSON.parse(event.body);
 
-  // Verificar a assinatura do Discord (necessário para interações)
-  const { verify } = require('discord.js');
-  const isValidRequest = verify(
+  // Verificar assinatura
+  const isValidRequest = verifyKey(
     Buffer.from(timestamp + JSON.stringify(body)),
-    Buffer.from(process.env.PUBLIC_KEY, 'hex'),
-    Buffer.from(signature, 'hex')
+    signature,
+    process.env.PUBLIC_KEY
   );
 
   if (!isValidRequest) {
-    return {
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Assinatura inválida' }),
-    };
+    return { statusCode: 401, body: JSON.stringify({ error: 'Assinatura inválida' }) };
   }
 
-  // Responder a pings do Discord
+  // Responder a pings
   if (body.type === 1) {
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ type: 1 }),
-    };
+    return { statusCode: 200, body: JSON.stringify({ type: 1 }) };
   }
 
   // Processar comando
-  if (body.type === 2) {
-    const commandName = body.data.name;
-    if (commandName === 'reply') {
-      const mensagem = body.data.options[0].value;
+  if (body.type === 2 && body.data.name === 'reply') {
+    const mensagem = body.data.options[0].value;
+    const embed = new EmbedBuilder()
+      .setColor(config.embed.color)
+      .setTitle(config.embed.title)
+      .setDescription(mensagem)
+      .setAuthor(config.embed.author)
+      .setFooter(config.embed.footer)
+      .setTimestamp(config.embed.timestamp ? new Date() : null);
 
-      // Criar embed
-      const embed = new EmbedBuilder()
-        .setColor(config.embed.color)
-        .setTitle(config.embed.title)
-        .setDescription(mensagem)
-        .setAuthor(config.embed.author)
-        .setFooter(config.embed.footer)
-        .setTimestamp(config.embed.timestamp ? new Date() : null);
-
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          type: 4, // ChannelMessageWithSource
-          data: {
-            embeds: [embed.toJSON()],
-          },
-        }),
-      };
-    }
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        type: 4,
+        data: { embeds: [embed.toJSON()] },
+      }),
+    };
   }
 
-  return {
-    statusCode: 400,
-    body: JSON.stringify({ error: 'Interação não suportada' }),
-  };
+  return { statusCode: 400, body: JSON.stringify({ error: 'Interação não suportada' }) };
 };
 
-// Registrar comandos ao iniciar (pode ser executado separadamente)
+// Registrar comandos (executar apenas uma vez ou em deploy)
 registerCommands();
