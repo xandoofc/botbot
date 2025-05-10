@@ -1,0 +1,18 @@
+{
+  "name": "discord-bot-railway",
+  "version": "1.0.0",
+  "description": "Bot do Discord para Railway com comando /reply",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "express": "^4.21.0",
+    "body-parser": "^1.20.3",
+    "discord-interactions": "^3.4.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
