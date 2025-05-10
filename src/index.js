@@ -9,7 +9,7 @@ const config = {
   clientId: process.env.CLIENT_ID,
   guildId: process.env.GUILD_ID, // Opcional, para testes em um servidor
   embed: {
-    color: 0x00ff00, // Verde
+    color: 0xff66ff, // Verde
     title: '',
     author: {
       name: '',
@@ -23,9 +23,28 @@ const config = {
   },
 };
 
+// Verificar variáveis de ambiente
+if (!config.token) {
+  console.error('Erro: DISCORD_TOKEN não está definido nas variáveis de ambiente.');
+  process.exit(1);
+}
+if (!config.clientId) {
+  console.error('Erro: CLIENT_ID não está definido nas variáveis de ambiente.');
+  process.exit(1);
+}
+if (!process.env.PUBLIC_KEY) {
+  console.error('Erro: PUBLIC_KEY não está definido nas variáveis de ambiente.');
+  process.exit(1);
+}
+
 // Inicializar Express
 const app = express();
 app.use(bodyParser.json());
+
+// Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
+});
 
 // Registrar comandos
 async function registerCommands() {
@@ -47,8 +66,13 @@ async function registerCommands() {
 
   try {
     console.log('Registrando comandos...');
-    // Registro global (use guildId para servidor específico)
-    await rest.put(Routes.applicationCommands(config.clientId), { body: commands });
+    // Registro no servidor específico (mude para global removendo guildId)
+    await rest.put(
+      config.guildId
+        ? Routes.applicationGuildCommands(config.clientId, config.guildId)
+        : Routes.applicationCommands(config.clientId),
+      { body: commands }
+    );
     console.log('Comandos registrados com sucesso!');
   } catch (error) {
     console.error('Erro ao registrar comandos:', error);
@@ -98,7 +122,7 @@ app.post('/interactions', async (req, res) => {
 });
 
 // Iniciar servidor
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
   registerCommands(); // Registrar comandos ao iniciar
