@@ -1,4 +1,4 @@
-const { EmbedBuilder, REST, Routes } = require('discord.js');
+const { EmbedBuilder, REST, Routes, Client } = require('discord.js');
 const express = require('express');
 const bodyParser = require('body-parser');
 const { verifyKey } = require('discord-interactions');
@@ -9,17 +9,13 @@ const config = {
   clientId: process.env.CLIENT_ID,
   guildId: process.env.GUILD_ID, // Opcional, para testes em um servidor
   embed: {
-    color: 0xff66ff, // Verde
+    color: 0x00ff00, // Verde
     title: '',
     author: {
       name: '',
       iconURL: '',
     },
-    footer: {
-      text: '',
-      iconURL: '',
-    },
-    timestamp: true,
+    timestamp: false,
   },
 };
 
@@ -126,4 +122,13 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
   registerCommands(); // Registrar comandos ao iniciar
+
+  // Opcional: Conectar bot para status online (descomente se necessário)
+  /*
+  const client = new Client({ intents: [] });
+  client.login(config.token).then(() => {
+    console.log('Bot conectado ao Discord!');
+    client.user.setPresence({ status: 'online' });
+  }).catch(err => console.error('Erro ao conectar bot:', err));
+  */
 });
